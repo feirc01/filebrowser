@@ -41,16 +41,19 @@ jobs:
           cache: true
 
       - name: Build Binary
+        env:
+          GOOS: windows
+          GOARCH: amd64
         run: |
           CGO_ENABLED=0 go build \
             -trimpath \
-            -ldflags "-s -w -X github.com/filebrowser/filebrowser/v2/cmd.Version=${{ github.event.inputs.version || 'custom' }}" \
-            -o filebrowser-linux-amd64 \
-            ./cmd/filebrowser
+            -ldflags "-s -w -X github.com/filebrowser/filebrowser/v2/cmd.Version=${{ github.event.inputs.version || 'custom-latest' }}" \
+            -o filebrowser-windows-amd64.exe \
+            .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: filebrowser-custom-${{ github.event.inputs.version || 'latest' }}
-          path: filebrowser-linux-amd64
+          name: filebrowser-windows-${{ github.event.inputs.version || 'latest' }}
+          path:  filebrowser-windows-amd64.exe
           retention-days: 30
