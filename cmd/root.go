@@ -113,6 +113,7 @@ func addServerFlags(flags *pflag.FlagSet) {
 	flags.Bool("disableTypeDetectionByHeader", false, "disables type detection by reading file headers")
 	flags.Bool("disableImageResolutionCalc", false, "disables image resolution calculation by reading image files")
 	flags.Bool("followExternalSymlinks", false, "follow symlinks whose target is outside the user scope (unsafe)")
+	flags.String("frontendDir", "", "path to external frontend assets directory (overrides embedded assets)")
 }
 
 var rootCmd = &cobra.Command{
@@ -232,10 +233,12 @@ user created with the credentials from options "username" and "password".`,
 			}
 		}
 
-		assetsFs, err := fs.Sub(frontend.Assets(), "dist")
-		if err != nil {
-			panic(err)
+		frontendDir := v.GetString("frontendDir")
+		if frontendDir == "" {
+    	return errors.New("frontendDir is required: no embedded frontend assets available")
 		}
+		log.Printf("Using external frontend assets from: %s", frontendDir)
+		assetsFs := os.DirFS(frontendDir)
 
 		handler, err := fbhttp.NewHandler(imageService, fileCache, uploadCache, st.Storage, server, assetsFs)
 		if err != nil {
