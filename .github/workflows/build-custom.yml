@@ -1,0 +1,53 @@
+name: Build Custom FileBrowser
+
+on:
+  # 手动触发（推荐，避免每次 push 都浪费额度）
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '自定义版本号标签'
+        required: false
+        default: 'custom-latest'
+  # 或者改为 push 触发：
+  # push:
+  #   branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Binary
+        run: |
+          CGO_ENABLED=0 go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/filebrowser/filebrowser/v2/cmd.Version=${{ github.event.inputs.version || 'custom' }}" \
+            -o filebrowser-linux-amd64 \
+            ./cmd/filebrowser
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: filebrowser-custom-${{ github.event.inputs.version || 'latest' }}
+          path: filebrowser-linux-amd64
+          retention-days: 30
